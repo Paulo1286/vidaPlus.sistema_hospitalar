@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Download, Calendar, Activity } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Relatorios() {
+  const { toast } = useToast();
+
   const reports = [
     {
       id: 1,
@@ -45,7 +48,13 @@ export default function Relatorios() {
           <h1 className="text-3xl font-bold text-foreground">Relatórios e Análises</h1>
           <p className="text-muted-foreground mt-1">Indicadores e métricas do sistema</p>
         </div>
-        <Button className="bg-gradient-primary">
+        <Button 
+          className="bg-gradient-primary"
+          onClick={() => toast({
+            title: "Exportando dados",
+            description: "Preparando arquivo para download...",
+          })}
+        >
           <Download className="w-4 h-4 mr-2" />
           Exportar Dados
         </Button>
@@ -115,11 +124,28 @@ export default function Relatorios() {
                   <span className="font-medium">{report.total}</span>
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Button variant="default" size="sm" className="flex-1 bg-primary">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="flex-1 bg-primary"
+                    onClick={() => toast({
+                      title: "Exportando relatório",
+                      description: `Baixando ${report.title}...`,
+                    })}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Exportar
                   </Button>
-                  <Button variant="outline" size="sm">Ver</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => toast({
+                      title: "Visualizando relatório",
+                      description: `Abrindo ${report.title}`,
+                    })}
+                  >
+                    Ver
+                  </Button>
                 </div>
               </div>
             </CardContent>

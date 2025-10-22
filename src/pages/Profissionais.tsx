@@ -1,10 +1,25 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { UserCog, Calendar, Mail, Phone, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Profissionais() {
-  const professionals = [
+  const { toast } = useToast();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    specialty: "",
+    crm: "",
+    email: "",
+    phone: ""
+  });
+
+  const [professionals, setProfessionals] = useState([
     {
       id: 1,
       name: "Dr. João Santos",
@@ -45,7 +60,30 @@ export default function Profissionais() {
       appointments: 10,
       status: "Ativo"
     },
-  ];
+  ]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newProfessional = {
+      id: professionals.length + 1,
+      ...formData,
+      appointments: 0,
+      status: "Ativo"
+    };
+    setProfessionals([...professionals, newProfessional]);
+    toast({
+      title: "Profissional cadastrado",
+      description: `${formData.name} foi adicionado com sucesso.`,
+    });
+    setOpenDialog(false);
+    setFormData({
+      name: "",
+      specialty: "",
+      crm: "",
+      email: "",
+      phone: ""
+    });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -55,10 +93,83 @@ export default function Profissionais() {
           <h1 className="text-3xl font-bold text-foreground">Profissionais de Saúde</h1>
           <p className="text-muted-foreground mt-1">Gestão de médicos, enfermeiros e equipe</p>
         </div>
-        <Button className="bg-gradient-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Profissional
-        </Button>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Profissional
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Novo Profissional</DialogTitle>
+              <DialogDescription>
+                Cadastrar novo profissional de saúde
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome Completo</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Dr. João Santos"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="specialty">Especialidade</Label>
+                <Input
+                  id="specialty"
+                  value={formData.specialty}
+                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                  placeholder="Cardiologia"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="crm">CRM</Label>
+                <Input
+                  id="crm"
+                  value={formData.crm}
+                  onChange={(e) => setFormData({ ...formData, crm: e.target.value })}
+                  placeholder="CRM/SP 123456"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="medico@vidaplus.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(11) 98765-4321"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setOpenDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1 bg-primary">
+                  Cadastrar
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats */}
@@ -137,8 +248,27 @@ export default function Profissionais() {
                 </div>
               </div>
               <div className="flex gap-2 pt-4 border-t border-border">
-                <Button variant="default" size="sm" className="bg-primary flex-1">Ver Agenda</Button>
-                <Button variant="outline" size="sm">Editar</Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="bg-primary flex-1"
+                  onClick={() => toast({
+                    title: "Agenda",
+                    description: `Visualizando agenda de ${professional.name}`,
+                  })}
+                >
+                  Ver Agenda
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast({
+                    title: "Edição",
+                    description: `Editando dados de ${professional.name}`,
+                  })}
+                >
+                  Editar
+                </Button>
               </div>
             </CardContent>
           </Card>

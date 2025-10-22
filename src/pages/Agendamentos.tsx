@@ -1,10 +1,27 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, User, Plus, Video } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Agendamentos() {
-  const appointments = [
+  const { toast } = useToast();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    patient: "",
+    doctor: "",
+    date: "",
+    time: "",
+    type: "Consulta",
+    specialty: ""
+  });
+
+  const [appointments, setAppointments] = useState([
     {
       id: 1,
       time: "08:00",
@@ -55,7 +72,46 @@ export default function Agendamentos() {
       status: "Confirmado",
       isTelemedicine: false
     },
-  ];
+  ]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newAppointment = {
+      id: appointments.length + 1,
+      time: formData.time,
+      patient: formData.patient,
+      doctor: formData.doctor,
+      type: formData.type,
+      specialty: formData.specialty,
+      status: "Confirmado",
+      isTelemedicine: false
+    };
+    setAppointments([...appointments, newAppointment]);
+    toast({
+      title: "Agendamento criado",
+      description: `Consulta marcada para ${formData.date} às ${formData.time}`,
+    });
+    setOpenDialog(false);
+    setFormData({
+      patient: "",
+      doctor: "",
+      date: "",
+      time: "",
+      type: "Consulta",
+      specialty: ""
+    });
+  };
+
+  const handleCancelAppointment = (id: number) => {
+    setAppointments(appointments.map(apt => 
+      apt.id === id ? { ...apt, status: "Cancelado" } : apt
+    ));
+    toast({
+      title: "Agendamento cancelado",
+      description: "O agendamento foi cancelado com sucesso.",
+      variant: "destructive"
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -78,10 +134,97 @@ export default function Agendamentos() {
           <h1 className="text-3xl font-bold text-foreground">Agendamentos</h1>
           <p className="text-muted-foreground mt-1">Gestão de consultas e procedimentos</p>
         </div>
-        <Button className="bg-gradient-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Agendamento
-        </Button>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Agendamento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Novo Agendamento</DialogTitle>
+              <DialogDescription>
+                Preencha os dados para criar um novo agendamento
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="patient">Paciente</Label>
+                <Input
+                  id="patient"
+                  value={formData.patient}
+                  onChange={(e) => setFormData({ ...formData, patient: e.target.value })}
+                  placeholder="Nome do paciente"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="doctor">Médico</Label>
+                <Input
+                  id="doctor"
+                  value={formData.doctor}
+                  onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
+                  placeholder="Nome do médico"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Data</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time">Horário</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Tipo</Label>
+                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Consulta">Consulta</SelectItem>
+                    <SelectItem value="Retorno">Retorno</SelectItem>
+                    <SelectItem value="Exame">Exame</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="specialty">Especialidade</Label>
+                <Input
+                  id="specialty"
+                  value={formData.specialty}
+                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                  placeholder="Ex: Cardiologia"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setOpenDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1 bg-primary">
+                  Agendar
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Calendar View Summary */}
@@ -170,14 +313,37 @@ export default function Agendamentos() {
 
                 <div className="flex gap-2 sm:flex-col lg:flex-row">
                   {appointment.isTelemedicine ? (
-                    <Button size="sm" className="bg-accent hover:bg-accent/90">
+                    <Button 
+                      size="sm" 
+                      className="bg-accent hover:bg-accent/90"
+                      onClick={() => toast({
+                        title: "Iniciando teleconsulta",
+                        description: `Conectando com ${appointment.patient}...`,
+                      })}
+                    >
                       <Video className="w-4 h-4 mr-2" />
                       Iniciar
                     </Button>
                   ) : (
-                    <Button size="sm" variant="outline">Atender</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => toast({
+                        title: "Atendimento iniciado",
+                        description: `Chamando ${appointment.patient}`,
+                      })}
+                    >
+                      Atender
+                    </Button>
                   )}
-                  <Button size="sm" variant="outline">Detalhes</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleCancelAppointment(appointment.id)}
+                    disabled={appointment.status === "Cancelado"}
+                  >
+                    Cancelar
+                  </Button>
                 </div>
               </div>
             ))}

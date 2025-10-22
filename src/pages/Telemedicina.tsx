@@ -1,10 +1,25 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Video, Calendar, Clock, User, PhoneCall, Monitor } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Video, Calendar, Clock, User, PhoneCall, Monitor, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Telemedicina() {
-  const activeConsultations = [
+  const { toast } = useToast();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    patient: "",
+    doctor: "",
+    date: "",
+    time: "",
+    specialty: ""
+  });
+
+  const [activeConsultations, setActiveConsultations] = useState([
     {
       id: 1,
       patient: "Maria Silva",
@@ -21,9 +36,9 @@ export default function Telemedicina() {
       duration: "5 min",
       status: "Aguardando"
     }
-  ];
+  ]);
 
-  const scheduledConsultations = [
+  const [scheduledConsultations, setScheduledConsultations] = useState([
     {
       id: 1,
       patient: "Carlos Santos",
@@ -45,7 +60,45 @@ export default function Telemedicina() {
       scheduledTime: "14:00",
       specialty: "Neurologia"
     }
-  ];
+  ]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newConsultation = {
+      id: scheduledConsultations.length + 1,
+      patient: formData.patient,
+      doctor: formData.doctor,
+      scheduledTime: formData.time,
+      specialty: formData.specialty
+    };
+    setScheduledConsultations([...scheduledConsultations, newConsultation]);
+    toast({
+      title: "Teleconsulta agendada",
+      description: `Consulta marcada para ${formData.date} às ${formData.time}`,
+    });
+    setOpenDialog(false);
+    setFormData({
+      patient: "",
+      doctor: "",
+      date: "",
+      time: "",
+      specialty: ""
+    });
+  };
+
+  const handleStartConsultation = (consultation: any) => {
+    toast({
+      title: "Iniciando teleconsulta",
+      description: `Conectando com ${consultation.patient}...`,
+    });
+  };
+
+  const handleJoinRoom = (consultation: any) => {
+    toast({
+      title: "Entrando na sala",
+      description: `Conectando à consulta de ${consultation.patient}...`,
+    });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -55,10 +108,84 @@ export default function Telemedicina() {
           <h1 className="text-3xl font-bold text-foreground">Telemedicina</h1>
           <p className="text-muted-foreground mt-1">Consultas virtuais e atendimento remoto</p>
         </div>
-        <Button className="bg-gradient-primary">
-          <Video className="w-4 h-4 mr-2" />
-          Nova Teleconsulta
-        </Button>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary">
+              <Video className="w-4 h-4 mr-2" />
+              Nova Teleconsulta
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Agendar Teleconsulta</DialogTitle>
+              <DialogDescription>
+                Preencha os dados para agendar uma nova teleconsulta
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="patient">Paciente</Label>
+                <Input
+                  id="patient"
+                  value={formData.patient}
+                  onChange={(e) => setFormData({ ...formData, patient: e.target.value })}
+                  placeholder="Nome do paciente"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="doctor">Médico</Label>
+                <Input
+                  id="doctor"
+                  value={formData.doctor}
+                  onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
+                  placeholder="Nome do médico"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Data</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="time">Horário</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="specialty">Especialidade</Label>
+                <Input
+                  id="specialty"
+                  value={formData.specialty}
+                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                  placeholder="Ex: Cardiologia"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setOpenDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1 bg-primary">
+                  Agendar
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats */}
@@ -79,7 +206,7 @@ export default function Telemedicina() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Em Andamento</p>
-                <p className="text-3xl font-bold text-foreground mt-1">2</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{activeConsultations.length}</p>
               </div>
               <Monitor className="w-10 h-10 text-secondary" />
             </div>
@@ -90,7 +217,7 @@ export default function Telemedicina() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Agendadas</p>
-                <p className="text-3xl font-bold text-foreground mt-1">8</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{scheduledConsultations.length}</p>
               </div>
               <Calendar className="w-10 h-10 text-accent" />
             </div>
@@ -137,12 +264,18 @@ export default function Telemedicina() {
                 </div>
                 <div className="flex gap-2">
                   {consultation.status === "Em andamento" ? (
-                    <Button className="bg-accent hover:bg-accent/90">
+                    <Button 
+                      className="bg-accent hover:bg-accent/90"
+                      onClick={() => handleJoinRoom(consultation)}
+                    >
                       <PhoneCall className="w-4 h-4 mr-2" />
                       Entrar na Sala
                     </Button>
                   ) : (
-                    <Button className="bg-secondary hover:bg-secondary/90">
+                    <Button 
+                      className="bg-secondary hover:bg-secondary/90"
+                      onClick={() => handleStartConsultation(consultation)}
+                    >
                       <Video className="w-4 h-4 mr-2" />
                       Iniciar Consulta
                     </Button>
@@ -182,7 +315,16 @@ export default function Telemedicina() {
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">Ver Detalhes</Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast({
+                    title: "Detalhes da consulta",
+                    description: `Visualizando consulta de ${consultation.patient}`,
+                  })}
+                >
+                  Ver Detalhes
+                </Button>
               </div>
             ))}
           </div>

@@ -2,8 +2,13 @@ import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Calendar, Activity, TrendingUp, Bell, Video, FileText } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
   const upcomingAppointments = [
     { id: 1, patient: "Maria Silva", doctor: "Dr. João Santos", time: "09:00", type: "Consulta" },
     { id: 2, patient: "Pedro Oliveira", doctor: "Dra. Ana Costa", time: "10:30", type: "Retorno" },
@@ -16,6 +21,14 @@ export default function Dashboard() {
     { id: 3, action: "Teleconsulta realizada", patient: "Roberto Silva", time: "há 30 min" },
   ];
 
+  const handleQuickAction = (action: string, route: string) => {
+    toast({
+      title: action,
+      description: "Redirecionando...",
+    });
+    navigate(route);
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -24,7 +37,13 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Visão geral do sistema VidaPlus</p>
         </div>
-        <Button className="bg-gradient-primary">
+        <Button 
+          className="bg-gradient-primary"
+          onClick={() => toast({
+            title: "Notificações",
+            description: "Você tem 5 novas notificações",
+          })}
+        >
           <Bell className="w-4 h-4 mr-2" />
           Notificações
         </Button>
@@ -76,7 +95,13 @@ export default function Dashboard() {
                 </CardTitle>
                 <CardDescription>Consultas e procedimentos do dia</CardDescription>
               </div>
-              <Button variant="outline" size="sm">Ver todos</Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate("/agendamentos")}
+              >
+                Ver todos
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -84,7 +109,11 @@ export default function Dashboard() {
               {upcomingAppointments.map((appointment) => (
                 <div
                   key={appointment.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => toast({
+                    title: "Detalhes do agendamento",
+                    description: `Visualizando consulta de ${appointment.patient}`,
+                  })}
                 >
                   <div className="space-y-1">
                     <p className="font-medium">{appointment.patient}</p>
@@ -111,7 +140,16 @@ export default function Dashboard() {
                 </CardTitle>
                 <CardDescription>Últimas atualizações do sistema</CardDescription>
               </div>
-              <Button variant="outline" size="sm">Ver todas</Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({
+                  title: "Todas as atividades",
+                  description: "Visualizando histórico completo",
+                })}
+              >
+                Ver todas
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -145,19 +183,35 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary"
+              onClick={() => handleQuickAction("Novo Agendamento", "/agendamentos")}
+            >
               <Calendar className="w-6 h-6" />
               <span>Novo Agendamento</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary"
+              onClick={() => handleQuickAction("Cadastrar Paciente", "/pacientes")}
+            >
               <Users className="w-6 h-6" />
               <span>Cadastrar Paciente</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary"
+              onClick={() => handleQuickAction("Iniciar Teleconsulta", "/telemedicina")}
+            >
               <Video className="w-6 h-6" />
               <span>Iniciar Teleconsulta</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4 hover:bg-primary-light hover:text-primary hover:border-primary"
+              onClick={() => handleQuickAction("Gerar Relatório", "/relatorios")}
+            >
               <FileText className="w-6 h-6" />
               <span>Gerar Relatório</span>
             </Button>
