@@ -3,12 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Search, Plus, Mail, Phone, MapPin, Calendar } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Pacientes() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    cpf: "",
+    email: "",
+    phone: "",
+    address: ""
+  });
 
-  const patients = [
+  const [patients, setPatients] = useState([
     { 
       id: 1, 
       name: "Maria Silva Santos", 
@@ -42,7 +55,68 @@ export default function Pacientes() {
       status: "Ativo",
       lastVisit: "05/01/2025"
     },
-  ];
+  ]);
+
+  const handleOpenDialog = (patient?: any) => {
+    if (patient) {
+      setEditingPatient(patient);
+      setFormData({
+        name: patient.name,
+        cpf: patient.cpf,
+        email: patient.email,
+        phone: patient.phone,
+        address: patient.address
+      });
+    } else {
+      setEditingPatient(null);
+      setFormData({
+        name: "",
+        cpf: "",
+        email: "",
+        phone: "",
+        address: ""
+      });
+    }
+    setOpenDialog(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingPatient) {
+      setPatients(patients.map(p => 
+        p.id === editingPatient.id 
+          ? { ...p, ...formData }
+          : p
+      ));
+      toast({
+        title: "Paciente atualizado",
+        description: "Os dados do paciente foram atualizados com sucesso.",
+      });
+    } else {
+      const newPatient = {
+        id: patients.length + 1,
+        ...formData,
+        birthDate: "01/01/1990",
+        lastVisit: new Date().toLocaleDateString('pt-BR'),
+        status: "Ativo"
+      };
+      setPatients([...patients, newPatient]);
+      toast({
+        title: "Paciente cadastrado",
+        description: "Novo paciente adicionado com sucesso.",
+      });
+    }
+    
+    setOpenDialog(false);
+    setFormData({
+      name: "",
+      cpf: "",
+      email: "",
+      phone: "",
+      address: ""
+    });
+  };
 
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,10 +132,83 @@ export default function Pacientes() {
           <h1 className="text-3xl font-bold text-foreground">Gestão de Pacientes</h1>
           <p className="text-muted-foreground mt-1">Cadastro e gerenciamento de pacientes</p>
         </div>
-        <Button className="bg-gradient-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Paciente
-        </Button>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary" onClick={() => handleOpenDialog()}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Paciente
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{editingPatient ? "Editar Paciente" : "Novo Paciente"}</DialogTitle>
+              <DialogDescription>
+                {editingPatient ? "Atualize os dados do paciente" : "Preencha os dados para cadastrar um novo paciente"}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome Completo</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Maria Silva Santos"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                  placeholder="123.456.789-00"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="paciente@email.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(11) 98765-4321"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Localização</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="São Paulo, SP"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setOpenDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1 bg-primary">
+                  {editingPatient ? "Atualizar" : "Cadastrar"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Stats */}
@@ -138,9 +285,33 @@ export default function Pacientes() {
                 </div>
               </div>
               <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                <Button variant="outline" size="sm">Ver Prontuário</Button>
-                <Button variant="outline" size="sm">Agendar Consulta</Button>
-                <Button variant="outline" size="sm">Editar</Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast({
+                    title: "Prontuário",
+                    description: `Abrindo prontuário de ${patient.name}`,
+                  })}
+                >
+                  Ver Prontuário
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast({
+                    title: "Agendamento",
+                    description: `Iniciando agendamento para ${patient.name}`,
+                  })}
+                >
+                  Agendar Consulta
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleOpenDialog(patient)}
+                >
+                  Editar
+                </Button>
               </div>
             </CardContent>
           </Card>
