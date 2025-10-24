@@ -14,7 +14,233 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          created_at: string | null
+          data_hora: string
+          id: string
+          observacoes: string | null
+          paciente_id: string
+          profissional_id: string
+          status: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_hora: string
+          id?: string
+          observacoes?: string | null
+          paciente_id: string
+          profissional_id: string
+          status?: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_hora?: string
+          id?: string
+          observacoes?: string | null
+          paciente_id?: string
+          profissional_id?: string
+          status?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pacientes: {
+        Row: {
+          cpf: string
+          created_at: string | null
+          data_nascimento: string
+          email: string
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string
+          user_id: string
+        }
+        Insert: {
+          cpf: string
+          created_at?: string | null
+          data_nascimento: string
+          email: string
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone: string
+          user_id: string
+        }
+        Update: {
+          cpf?: string
+          created_at?: string | null
+          data_nascimento?: string
+          email?: string
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      profissionais: {
+        Row: {
+          created_at: string | null
+          crm: string
+          email: string
+          especialidade: string
+          id: string
+          nome: string
+          telefone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          crm: string
+          email: string
+          especialidade: string
+          id?: string
+          nome: string
+          telefone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          crm?: string
+          email?: string
+          especialidade?: string
+          id?: string
+          nome?: string
+          telefone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prontuarios: {
+        Row: {
+          created_at: string | null
+          data: string
+          descricao: string
+          id: string
+          paciente_id: string
+          prioridade: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: string
+          descricao: string
+          id?: string
+          paciente_id: string
+          prioridade?: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          paciente_id?: string
+          prioridade?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prontuarios_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemedicina: {
+        Row: {
+          created_at: string | null
+          data_hora: string
+          id: string
+          paciente_id: string
+          profissional_id: string
+          sala_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_hora: string
+          id?: string
+          paciente_id: string
+          profissional_id: string
+          sala_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_hora?: string
+          id?: string
+          paciente_id?: string
+          profissional_id?: string
+          sala_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemedicina_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemedicina_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
