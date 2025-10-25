@@ -7,74 +7,43 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Search, Plus, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePacientes } from "@/hooks/usePacientes";
 
 export default function Pacientes() {
   const { toast } = useToast();
+  const { pacientes, isLoading, addPaciente, updatePaciente } = usePacientes();
   const [searchTerm, setSearchTerm] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [editingPatient, setEditingPatient] = useState<any>(null);
   const [formData, setFormData] = useState({
-    name: "",
+    nome: "",
     cpf: "",
     email: "",
-    phone: "",
-    address: ""
+    telefone: "",
+    endereco: "",
+    data_nascimento: ""
   });
-
-  const [patients, setPatients] = useState([
-    { 
-      id: 1, 
-      name: "Maria Silva Santos", 
-      cpf: "123.456.789-00", 
-      email: "maria.silva@email.com",
-      phone: "(11) 98765-4321",
-      birthDate: "15/03/1985",
-      address: "São Paulo, SP",
-      status: "Ativo",
-      lastVisit: "10/01/2025"
-    },
-    { 
-      id: 2, 
-      name: "João Pedro Oliveira", 
-      cpf: "987.654.321-00", 
-      email: "joao.pedro@email.com",
-      phone: "(11) 91234-5678",
-      birthDate: "22/07/1992",
-      address: "Campinas, SP",
-      status: "Ativo",
-      lastVisit: "08/01/2025"
-    },
-    { 
-      id: 3, 
-      name: "Ana Paula Costa", 
-      cpf: "456.789.123-00", 
-      email: "ana.costa@email.com",
-      phone: "(11) 99876-5432",
-      birthDate: "30/11/1978",
-      address: "Santos, SP",
-      status: "Ativo",
-      lastVisit: "05/01/2025"
-    },
-  ]);
 
   const handleOpenDialog = (patient?: any) => {
     if (patient) {
       setEditingPatient(patient);
       setFormData({
-        name: patient.name,
+        nome: patient.nome,
         cpf: patient.cpf,
         email: patient.email,
-        phone: patient.phone,
-        address: patient.address
+        telefone: patient.telefone,
+        endereco: patient.endereco || "",
+        data_nascimento: patient.data_nascimento
       });
     } else {
       setEditingPatient(null);
       setFormData({
-        name: "",
+        nome: "",
         cpf: "",
         email: "",
-        phone: "",
-        address: ""
+        telefone: "",
+        endereco: "",
+        data_nascimento: ""
       });
     }
     setOpenDialog(true);
@@ -84,45 +53,38 @@ export default function Pacientes() {
     e.preventDefault();
     
     if (editingPatient) {
-      setPatients(patients.map(p => 
-        p.id === editingPatient.id 
-          ? { ...p, ...formData }
-          : p
-      ));
-      toast({
-        title: "Paciente atualizado",
-        description: "Os dados do paciente foram atualizados com sucesso.",
+      updatePaciente({
+        id: editingPatient.id,
+        ...formData
       });
     } else {
-      const newPatient = {
-        id: patients.length + 1,
-        ...formData,
-        birthDate: "01/01/1990",
-        lastVisit: new Date().toLocaleDateString('pt-BR'),
-        status: "Ativo"
-      };
-      setPatients([...patients, newPatient]);
-      toast({
-        title: "Paciente cadastrado",
-        description: "Novo paciente adicionado com sucesso.",
-      });
+      addPaciente(formData);
     }
     
     setOpenDialog(false);
     setFormData({
-      name: "",
+      nome: "",
       cpf: "",
       email: "",
-      phone: "",
-      address: ""
+      telefone: "",
+      endereco: "",
+      data_nascimento: ""
     });
   };
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredPatients = pacientes.filter(patient =>
+    patient.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.cpf.includes(searchTerm) ||
     patient.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Carregando pacientes...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -148,11 +110,11 @@ export default function Pacientes() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo</Label>
+                <Label htmlFor="nome">Nome Completo</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                   placeholder="Maria Silva Santos"
                   required
                 />
@@ -168,6 +130,16 @@ export default function Pacientes() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="data_nascimento">Data de Nascimento</Label>
+                <Input
+                  id="data_nascimento"
+                  type="date"
+                  value={formData.data_nascimento}
+                  onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -179,23 +151,22 @@ export default function Pacientes() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="telefone">Telefone</Label>
                 <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  id="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                   placeholder="(11) 98765-4321"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Localização</Label>
+                <Label htmlFor="endereco">Endereço</Label>
                 <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  id="endereco"
+                  value={formData.endereco}
+                  onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
                   placeholder="São Paulo, SP"
-                  required
                 />
               </div>
               <div className="flex gap-3 pt-4">
@@ -226,11 +197,11 @@ export default function Pacientes() {
             </div>
             <div className="flex gap-4">
               <div className="bg-primary-light px-4 py-2 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">{patients.length}</p>
+                <p className="text-2xl font-bold text-primary">{pacientes.length}</p>
                 <p className="text-xs text-muted-foreground">Total</p>
               </div>
               <div className="bg-secondary-light px-4 py-2 rounded-lg text-center">
-                <p className="text-2xl font-bold text-secondary">{patients.length}</p>
+                <p className="text-2xl font-bold text-secondary">{pacientes.length}</p>
                 <p className="text-xs text-muted-foreground">Ativos</p>
               </div>
             </div>
@@ -245,11 +216,11 @@ export default function Pacientes() {
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-xl">{patient.name}</CardTitle>
+                  <CardTitle className="text-xl">{patient.nome}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">CPF: {patient.cpf}</p>
                 </div>
                 <Badge variant="default" className="bg-secondary">
-                  {patient.status}
+                  Ativo
                 </Badge>
               </div>
             </CardHeader>
@@ -266,21 +237,21 @@ export default function Pacientes() {
                   <Phone className="w-4 h-4 text-primary mt-1" />
                   <div>
                     <p className="text-xs text-muted-foreground">Telefone</p>
-                    <p className="text-sm font-medium">{patient.phone}</p>
+                    <p className="text-sm font-medium">{patient.telefone}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-primary mt-1" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Localização</p>
-                    <p className="text-sm font-medium">{patient.address}</p>
+                    <p className="text-xs text-muted-foreground">Endereço</p>
+                    <p className="text-sm font-medium">{patient.endereco || "Não informado"}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Calendar className="w-4 h-4 text-primary mt-1" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Última Visita</p>
-                    <p className="text-sm font-medium">{patient.lastVisit}</p>
+                    <p className="text-xs text-muted-foreground">Data Nascimento</p>
+                    <p className="text-sm font-medium">{new Date(patient.data_nascimento).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
               </div>
@@ -290,7 +261,7 @@ export default function Pacientes() {
                   size="sm"
                   onClick={() => toast({
                     title: "Prontuário",
-                    description: `Abrindo prontuário de ${patient.name}`,
+                    description: `Abrindo prontuário de ${patient.nome}`,
                   })}
                 >
                   Ver Prontuário
@@ -300,7 +271,7 @@ export default function Pacientes() {
                   size="sm"
                   onClick={() => toast({
                     title: "Agendamento",
-                    description: `Iniciando agendamento para ${patient.name}`,
+                    description: `Iniciando agendamento para ${patient.nome}`,
                   })}
                 >
                   Agendar Consulta
