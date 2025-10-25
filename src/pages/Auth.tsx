@@ -4,15 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ActivitySquare } from "lucide-react";
+import type { UserRole } from "@/hooks/useAuth";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<UserRole>("paciente");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -42,6 +45,7 @@ export default function Auth() {
           options: {
             data: {
               full_name: fullName,
+              role: role,
             },
             emailRedirectTo: `${window.location.origin}/`,
           },
@@ -120,6 +124,22 @@ export default function Auth() {
                 minLength={6}
               />
             </div>
+            
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="role">Tipo de Usuário</Label>
+                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paciente">Paciente</SelectItem>
+                    <SelectItem value="profissional">Profissional de Saúde</SelectItem>
+                    <SelectItem value="administrador">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Processando..." : isLogin ? "Entrar" : "Criar Conta"}
