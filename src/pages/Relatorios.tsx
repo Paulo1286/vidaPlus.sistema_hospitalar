@@ -2,9 +2,52 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Download, Calendar, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePacientes } from "@/hooks/usePacientes";
+import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { useProfissionais } from "@/hooks/useProfissionais";
+import { useProntuarios } from "@/hooks/useProntuarios";
+import { useTelemedicina } from "@/hooks/useTelemedicina";
 
 export default function Relatorios() {
   const { toast } = useToast();
+  const { pacientes } = usePacientes();
+  const { agendamentos } = useAgendamentos();
+  const { profissionais } = useProfissionais();
+  const { prontuarios } = useProntuarios();
+  const { consultas } = useTelemedicina();
+
+  // Calcular estatísticas
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const atendimentosMes = agendamentos.filter(a => {
+    const date = new Date(a.data_hora);
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  }).length;
+
+  const teleconsultasMes = consultas.filter(t => {
+    const date = new Date(t.data_hora);
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  }).length;
+
+  const totalAtendimentos = atendimentosMes + teleconsultasMes;
+
+  // Agrupar por especialidade
+  const atendimentosPorEspecialidade = profissionais.reduce((acc, prof) => {
+    const count = agendamentos.filter(a => a.profissional_id === prof.id).length;
+    if (count > 0) {
+      acc[prof.especialidade] = (acc[prof.especialidade] || 0) + count;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const especialidades = Object.keys(atendimentosPorEspecialidade).length;
+
+  // Taxa de ocupação (simulada)
+  const taxaOcupacao = Math.round((totalAtendimentos / (profissionais.length * 30)) * 100);
+  
+  // Satisfação (simulada)
+  const satisfacao = 4.8;
 
   const reports = [
     {
@@ -12,32 +55,32 @@ export default function Relatorios() {
       title: "Atendimentos Mensais",
       description: "Relatório de consultas e procedimentos do mês",
       icon: Calendar,
-      period: "Janeiro 2025",
-      total: "1,284 atendimentos"
+      period: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+      total: `${totalAtendimentos} atendimentos`
     },
     {
       id: 2,
       title: "Desempenho por Especialidade",
       description: "Análise de produtividade por área médica",
       icon: TrendingUp,
-      period: "Última semana",
-      total: "12 especialidades"
+      period: "Este mês",
+      total: `${especialidades} especialidades ativas`
     },
     {
       id: 3,
       title: "Taxa de Ocupação",
-      description: "Uso de leitos e salas de atendimento",
+      description: "Uso de recursos e profissionais",
       icon: Activity,
-      period: "Hoje",
-      total: "87% ocupação"
+      period: "Este mês",
+      total: `${taxaOcupacao}% ocupação`
     },
   ];
 
   const quickStats = [
-    { label: "Pacientes Atendidos", value: "1,284", change: "+12%", trend: "up" },
-    { label: "Taxa de Ocupação", value: "87%", change: "+5%", trend: "up" },
-    { label: "Receita Mensal", value: "R$ 245K", change: "+8%", trend: "up" },
-    { label: "Satisfação", value: "4.8/5", change: "+0.2", trend: "up" },
+    { label: "Pacientes Cadastrados", value: pacientes.length.toString(), change: "Total no sistema", trend: "up" },
+    { label: "Taxa de Ocupação", value: `${taxaOcupacao}%`, change: "Este mês", trend: "up" },
+    { label: "Atendimentos Totais", value: totalAtendimentos.toString(), change: "Este mês", trend: "up" },
+    { label: "Satisfação", value: `${satisfacao}/5`, change: "Média geral", trend: "up" },
   ];
 
   return (

@@ -8,110 +8,62 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, User, Plus, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { usePacientes } from "@/hooks/usePacientes";
+import { useProfissionais } from "@/hooks/useProfissionais";
 
 export default function Agendamentos() {
   const { toast } = useToast();
+  const { agendamentos, isLoading, addAgendamento, updateAgendamento, deleteAgendamento } = useAgendamentos();
+  const { pacientes } = usePacientes();
+  const { profissionais } = useProfissionais();
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState({
-    patient: "",
-    doctor: "",
-    date: "",
-    time: "",
-    type: "Consulta",
-    specialty: ""
+    paciente_id: "",
+    profissional_id: "",
+    data_hora: "",
+    tipo: "Consulta",
+    observacoes: ""
   });
-
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      time: "08:00",
-      patient: "Maria Silva Santos",
-      doctor: "Dr. João Santos",
-      type: "Consulta",
-      specialty: "Cardiologia",
-      status: "Confirmado",
-      isTelemedicine: false
-    },
-    {
-      id: 2,
-      time: "09:30",
-      patient: "Pedro Oliveira",
-      doctor: "Dra. Ana Costa",
-      type: "Retorno",
-      specialty: "Pediatria",
-      status: "Confirmado",
-      isTelemedicine: true
-    },
-    {
-      id: 3,
-      time: "10:00",
-      patient: "Carla Santos",
-      doctor: "Dr. Paulo Lima",
-      type: "Exame",
-      specialty: "Ortopedia",
-      status: "Aguardando",
-      isTelemedicine: false
-    },
-    {
-      id: 4,
-      time: "11:00",
-      patient: "Roberto Silva",
-      doctor: "Dra. Fernanda Alves",
-      type: "Consulta",
-      specialty: "Dermatologia",
-      status: "Confirmado",
-      isTelemedicine: true
-    },
-    {
-      id: 5,
-      time: "14:00",
-      patient: "Juliana Costa",
-      doctor: "Dr. Carlos Mendes",
-      type: "Retorno",
-      specialty: "Neurologia",
-      status: "Confirmado",
-      isTelemedicine: false
-    },
-  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newAppointment = {
-      id: appointments.length + 1,
-      time: formData.time,
-      patient: formData.patient,
-      doctor: formData.doctor,
-      type: formData.type,
-      specialty: formData.specialty,
+    addAgendamento({
+      paciente_id: formData.paciente_id,
+      profissional_id: formData.profissional_id,
+      data_hora: formData.data_hora,
+      tipo: formData.tipo,
       status: "Confirmado",
-      isTelemedicine: false
-    };
-    setAppointments([...appointments, newAppointment]);
-    toast({
-      title: "Agendamento criado",
-      description: `Consulta marcada para ${formData.date} às ${formData.time}`,
+      observacoes: formData.observacoes
     });
     setOpenDialog(false);
     setFormData({
-      patient: "",
-      doctor: "",
-      date: "",
-      time: "",
-      type: "Consulta",
-      specialty: ""
+      paciente_id: "",
+      profissional_id: "",
+      data_hora: "",
+      tipo: "Consulta",
+      observacoes: ""
     });
   };
 
-  const handleCancelAppointment = (id: number) => {
-    setAppointments(appointments.map(apt => 
-      apt.id === id ? { ...apt, status: "Cancelado" } : apt
-    ));
-    toast({
-      title: "Agendamento cancelado",
-      description: "O agendamento foi cancelado com sucesso.",
-      variant: "destructive"
-    });
+  const handleCancelAppointment = (id: string) => {
+    deleteAgendamento(id);
   };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+
+  const todayCount = agendamentos.filter(a => 
+    new Date(a.data_hora).toDateString() === new Date().toDateString()
+  ).length;
+  
+  const thisWeekCount = agendamentos.filter(a => {
+    const date = new Date(a.data_hora);
+    const now = new Date();
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    return date >= weekStart;
+  }).length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -150,50 +102,44 @@ export default function Agendamentos() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="patient">Paciente</Label>
+                <Label htmlFor="paciente">Paciente</Label>
+                <Select value={formData.paciente_id} onValueChange={(value) => setFormData({ ...formData, paciente_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um paciente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pacientes.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="profissional">Profissional</Label>
+                <Select value={formData.profissional_id} onValueChange={(value) => setFormData({ ...formData, profissional_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um profissional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profissionais.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} - {p.especialidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="data_hora">Data e Horário</Label>
                 <Input
-                  id="patient"
-                  value={formData.patient}
-                  onChange={(e) => setFormData({ ...formData, patient: e.target.value })}
-                  placeholder="Nome do paciente"
+                  id="data_hora"
+                  type="datetime-local"
+                  value={formData.data_hora}
+                  onChange={(e) => setFormData({ ...formData, data_hora: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="doctor">Médico</Label>
-                <Input
-                  id="doctor"
-                  value={formData.doctor}
-                  onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
-                  placeholder="Nome do médico"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Data</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Horário</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo</Label>
-                <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                <Label htmlFor="tipo">Tipo</Label>
+                <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -205,13 +151,12 @@ export default function Agendamentos() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialty">Especialidade</Label>
+                <Label htmlFor="observacoes">Observações</Label>
                 <Input
-                  id="specialty"
-                  value={formData.specialty}
-                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                  placeholder="Ex: Cardiologia"
-                  required
+                  id="observacoes"
+                  value={formData.observacoes}
+                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                  placeholder="Observações adicionais"
                 />
               </div>
               <div className="flex gap-3 pt-4">
@@ -234,7 +179,7 @@ export default function Agendamentos() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Hoje</p>
-                <p className="text-2xl font-bold text-foreground mt-1">15 Consultas</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{todayCount} Consultas</p>
               </div>
               <Calendar className="w-10 h-10 text-primary" />
             </div>
@@ -245,7 +190,7 @@ export default function Agendamentos() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Esta Semana</p>
-                <p className="text-2xl font-bold text-foreground mt-1">89 Consultas</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{thisWeekCount} Consultas</p>
               </div>
               <Clock className="w-10 h-10 text-secondary" />
             </div>
@@ -271,82 +216,68 @@ export default function Agendamentos() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {appointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="flex flex-col items-center bg-primary-light p-3 rounded-lg min-w-[80px]">
-                    <Clock className="w-5 h-5 text-primary mb-1" />
-                    <span className="font-bold text-primary">{appointment.time}</span>
-                  </div>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold text-foreground flex items-center gap-2">
-                          {appointment.patient}
-                          {appointment.isTelemedicine && (
-                            <Video className="w-4 h-4 text-accent" />
-                          )}
-                        </h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <User className="w-3 h-3" />
-                          {appointment.doctor} - {appointment.specialty}
-                        </p>
-                      </div>
-                      <Badge className={getStatusColor(appointment.status)}>
-                        {appointment.status}
-                      </Badge>
+            {agendamentos.map((agendamento) => {
+              const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+              const profissional = profissionais.find(p => p.id === agendamento.profissional_id);
+              const dataHora = new Date(agendamento.data_hora);
+              
+              return (
+                <div
+                  key={agendamento.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex flex-col items-center bg-primary-light p-3 rounded-lg min-w-[80px]">
+                      <Clock className="w-5 h-5 text-primary mb-1" />
+                      <span className="font-bold text-primary">
+                        {dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline">{appointment.type}</Badge>
-                      {appointment.isTelemedicine && (
-                        <Badge variant="outline" className="border-accent text-accent">
-                          Online
+                    
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            {paciente?.nome || 'Paciente não encontrado'}
+                          </h3>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                            <User className="w-3 h-3" />
+                            {profissional?.nome || 'Profissional não encontrado'} - {profissional?.especialidade}
+                          </p>
+                        </div>
+                        <Badge className={getStatusColor(agendamento.status)}>
+                          {agendamento.status}
                         </Badge>
-                      )}
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="outline">{agendamento.tipo}</Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-2 sm:flex-col lg:flex-row">
-                  {appointment.isTelemedicine ? (
-                    <Button 
-                      size="sm" 
-                      className="bg-accent hover:bg-accent/90"
-                      onClick={() => toast({
-                        title: "Iniciando teleconsulta",
-                        description: `Conectando com ${appointment.patient}...`,
-                      })}
-                    >
-                      <Video className="w-4 h-4 mr-2" />
-                      Iniciar
-                    </Button>
-                  ) : (
+                  <div className="flex gap-2 sm:flex-col lg:flex-row">
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => toast({
                         title: "Atendimento iniciado",
-                        description: `Chamando ${appointment.patient}`,
+                        description: `Chamando ${paciente?.nome}`,
                       })}
                     >
                       Atender
                     </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleCancelAppointment(appointment.id)}
-                    disabled={appointment.status === "Cancelado"}
-                  >
-                    Cancelar
-                  </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleCancelAppointment(agendamento.id)}
+                      disabled={agendamento.status === "Cancelado"}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

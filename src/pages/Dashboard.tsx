@@ -4,22 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Users, Calendar, Activity, TrendingUp, Bell, Video, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { usePacientes } from "@/hooks/usePacientes";
+import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { useTelemedicina } from "@/hooks/useTelemedicina";
+import { useProfissionais } from "@/hooks/useProfissionais";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { pacientes } = usePacientes();
+  const { agendamentos } = useAgendamentos();
+  const { consultas } = useTelemedicina();
+  const { profissionais } = useProfissionais();
 
-  const upcomingAppointments = [
-    { id: 1, patient: "Maria Silva", doctor: "Dr. João Santos", time: "09:00", type: "Consulta" },
-    { id: 2, patient: "Pedro Oliveira", doctor: "Dra. Ana Costa", time: "10:30", type: "Retorno" },
-    { id: 3, patient: "Carla Santos", doctor: "Dr. Paulo Lima", time: "14:00", type: "Exame" },
-  ];
+  const todayAppointments = agendamentos.filter(a => 
+    new Date(a.data_hora).toDateString() === new Date().toDateString()
+  );
 
-  const recentActivities = [
-    { id: 1, action: "Nova consulta agendada", patient: "Lucas Ferreira", time: "há 5 min" },
-    { id: 2, action: "Prontuário atualizado", patient: "Ana Paula", time: "há 15 min" },
-    { id: 3, action: "Teleconsulta realizada", patient: "Roberto Silva", time: "há 30 min" },
-  ];
+  const todayTelemedicinas = consultas.filter(t => 
+    new Date(t.data_hora).toDateString() === new Date().toDateString()
+  );
+
+  const pendingAppointments = todayAppointments.filter(a => a.status === "Aguardando").length;
+  const taxaOcupacao = Math.round((todayAppointments.length / (profissionais.length * 8)) * 100);
+
 
   const handleQuickAction = (action: string, route: string) => {
     toast({
@@ -53,31 +61,31 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Pacientes"
-          value="1,284"
+          value={pacientes.length.toString()}
           icon={Users}
-          trend="+12% este mês"
+          trend="Total cadastrados"
           trendUp={true}
           variant="primary"
         />
         <StatCard
           title="Consultas Hoje"
-          value="48"
+          value={todayAppointments.length.toString()}
           icon={Calendar}
-          trend="8 pendentes"
+          trend={`${pendingAppointments} pendentes`}
           variant="secondary"
         />
         <StatCard
           title="Teleconsultas"
-          value="23"
+          value={todayTelemedicinas.length.toString()}
           icon={Video}
-          trend="+18% esta semana"
+          trend="Agendadas hoje"
           trendUp={true}
         />
         <StatCard
           title="Taxa de Ocupação"
-          value="87%"
+          value={`${taxaOcupacao}%`}
           icon={Activity}
-          trend="+5% comparado ontem"
+          trend="Hoje"
           trendUp={true}
         />
       </div>
@@ -106,25 +114,30 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingAppointments.map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => toast({
-                    title: "Detalhes do agendamento",
-                    description: `Visualizando consulta de ${appointment.patient}`,
-                  })}
-                >
-                  <div className="space-y-1">
-                    <p className="font-medium">{appointment.patient}</p>
-                    <p className="text-sm text-muted-foreground">{appointment.doctor}</p>
+              {todayAppointments.slice(0, 3).map((agendamento) => {
+                const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+                const profissional = profissionais.find(p => p.id === agendamento.profissional_id);
+                const dataHora = new Date(agendamento.data_hora);
+                
+                return (
+                  <div
+                    key={agendamento.id}
+                    className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => navigate("/agendamentos")}
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium">{paciente?.nome}</p>
+                      <p className="text-sm text-muted-foreground">{profissional?.nome}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-primary">
+                        {dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{agendamento.tipo}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-primary">{appointment.time}</p>
-                    <p className="text-sm text-muted-foreground">{appointment.type}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -154,19 +167,25 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="w-2 h-2 rounded-full bg-secondary mt-2" />
-                  <div className="flex-1 space-y-1">
-                    <p className="font-medium">{activity.action}</p>
-                    <p className="text-sm text-muted-foreground">{activity.patient}</p>
+              {agendamentos.slice(0, 3).map((agendamento) => {
+                const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+                const diffMinutes = Math.floor((Date.now() - new Date(agendamento.created_at).getTime()) / 60000);
+                const timeAgo = diffMinutes < 60 ? `há ${diffMinutes} min` : `há ${Math.floor(diffMinutes / 60)}h`;
+                
+                return (
+                  <div
+                    key={agendamento.id}
+                    className="flex items-start gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-secondary mt-2" />
+                    <div className="flex-1 space-y-1">
+                      <p className="font-medium">Agendamento: {agendamento.tipo}</p>
+                      <p className="text-sm text-muted-foreground">{paciente?.nome}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{timeAgo}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{activity.time}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

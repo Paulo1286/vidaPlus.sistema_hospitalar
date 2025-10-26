@@ -7,83 +7,40 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { UserCog, Calendar, Mail, Phone, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProfissionais } from "@/hooks/useProfissionais";
+import { useAgendamentos } from "@/hooks/useAgendamentos";
 
 export default function Profissionais() {
   const { toast } = useToast();
+  const { profissionais, isLoading, addProfissional } = useProfissionais();
+  const { agendamentos } = useAgendamentos();
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    specialty: "",
+    nome: "",
+    especialidade: "",
     crm: "",
     email: "",
-    phone: ""
+    telefone: ""
   });
-
-  const [professionals, setProfessionals] = useState([
-    {
-      id: 1,
-      name: "Dr. João Santos",
-      specialty: "Cardiologia",
-      crm: "CRM/SP 123456",
-      email: "joao.santos@vidaplus.com",
-      phone: "(11) 98765-4321",
-      appointments: 12,
-      status: "Ativo"
-    },
-    {
-      id: 2,
-      name: "Dra. Ana Costa",
-      specialty: "Pediatria",
-      crm: "CRM/SP 789012",
-      email: "ana.costa@vidaplus.com",
-      phone: "(11) 91234-5678",
-      appointments: 15,
-      status: "Ativo"
-    },
-    {
-      id: 3,
-      name: "Dr. Paulo Lima",
-      specialty: "Ortopedia",
-      crm: "CRM/SP 345678",
-      email: "paulo.lima@vidaplus.com",
-      phone: "(11) 99876-5432",
-      appointments: 8,
-      status: "Ativo"
-    },
-    {
-      id: 4,
-      name: "Dra. Fernanda Alves",
-      specialty: "Dermatologia",
-      crm: "CRM/SP 901234",
-      email: "fernanda.alves@vidaplus.com",
-      phone: "(11) 97654-3210",
-      appointments: 10,
-      status: "Ativo"
-    },
-  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newProfessional = {
-      id: professionals.length + 1,
-      ...formData,
-      appointments: 0,
-      status: "Ativo"
-    };
-    setProfessionals([...professionals, newProfessional]);
-    toast({
-      title: "Profissional cadastrado",
-      description: `${formData.name} foi adicionado com sucesso.`,
-    });
+    addProfissional(formData);
     setOpenDialog(false);
     setFormData({
-      name: "",
-      specialty: "",
+      nome: "",
+      especialidade: "",
       crm: "",
       email: "",
-      phone: ""
+      telefone: ""
     });
   };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+
+  const totalProfissionais = profissionais.length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -109,21 +66,21 @@ export default function Profissionais() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo</Label>
+                <Label htmlFor="nome">Nome Completo</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                   placeholder="Dr. João Santos"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialty">Especialidade</Label>
+                <Label htmlFor="especialidade">Especialidade</Label>
                 <Input
-                  id="specialty"
-                  value={formData.specialty}
-                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                  id="especialidade"
+                  value={formData.especialidade}
+                  onChange={(e) => setFormData({ ...formData, especialidade: e.target.value })}
                   placeholder="Cardiologia"
                   required
                 />
@@ -150,11 +107,11 @@ export default function Profissionais() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="telefone">Telefone</Label>
                 <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  id="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                   placeholder="(11) 98765-4321"
                   required
                 />
@@ -179,7 +136,7 @@ export default function Profissionais() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/80">Total</p>
-                <p className="text-3xl font-bold text-white mt-1">48</p>
+                <p className="text-3xl font-bold text-white mt-1">{totalProfissionais}</p>
               </div>
               <UserCog className="w-10 h-10 text-white/80" />
             </div>
@@ -213,66 +170,73 @@ export default function Profissionais() {
 
       {/* Professionals List */}
       <div className="grid gap-6 md:grid-cols-2">
-        {professionals.map((professional) => (
-          <Card key={professional.id} className="shadow-card hover:shadow-elegant transition-all">
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg">
-                    {professional.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+        {profissionais.map((profissional) => {
+          const profissionalAgendamentos = agendamentos.filter(a => a.profissional_id === profissional.id);
+          const todayAppointments = profissionalAgendamentos.filter(a => 
+            new Date(a.data_hora).toDateString() === new Date().toDateString()
+          ).length;
+          
+          return (
+            <Card key={profissional.id} className="shadow-card hover:shadow-elegant transition-all">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-lg">
+                      {profissional.nome.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">{profissional.nome}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">{profissional.especialidade}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{profissional.crm}</p>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-xl">{professional.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{professional.specialty}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{professional.crm}</p>
+                  <Badge variant="default" className="bg-secondary">
+                    Ativo
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Mail className="w-4 h-4 text-primary" />
+                    <span>{profissional.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Phone className="w-4 h-4 text-primary" />
+                    <span>{profissional.telefone}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <span>{todayAppointments} consultas hoje</span>
                   </div>
                 </div>
-                <Badge variant="default" className="bg-secondary">
-                  {professional.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="w-4 h-4 text-primary" />
-                  <span>{professional.email}</span>
+                <div className="flex gap-2 pt-4 border-t border-border">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="bg-primary flex-1"
+                    onClick={() => toast({
+                      title: "Agenda",
+                      description: `Visualizando agenda de ${profissional.nome}`,
+                    })}
+                  >
+                    Ver Agenda
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => toast({
+                      title: "Edição",
+                      description: `Editando dados de ${profissional.nome}`,
+                    })}
+                  >
+                    Editar
+                  </Button>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="w-4 h-4 text-primary" />
-                  <span>{professional.phone}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span>{professional.appointments} consultas hoje</span>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-4 border-t border-border">
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="bg-primary flex-1"
-                  onClick={() => toast({
-                    title: "Agenda",
-                    description: `Visualizando agenda de ${professional.name}`,
-                  })}
-                >
-                  Ver Agenda
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => toast({
-                    title: "Edição",
-                    description: `Editando dados de ${professional.name}`,
-                  })}
-                >
-                  Editar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

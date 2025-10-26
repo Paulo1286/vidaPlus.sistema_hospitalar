@@ -5,100 +5,61 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Video, Calendar, Clock, User, PhoneCall, Monitor, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTelemedicina } from "@/hooks/useTelemedicina";
+import { usePacientes } from "@/hooks/usePacientes";
+import { useProfissionais } from "@/hooks/useProfissionais";
 
 export default function Telemedicina() {
   const { toast } = useToast();
+  const { consultas, isLoading, addConsulta, updateConsulta } = useTelemedicina();
+  const { pacientes } = usePacientes();
+  const { profissionais } = useProfissionais();
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState({
-    patient: "",
-    doctor: "",
-    date: "",
-    time: "",
-    specialty: ""
+    paciente_id: "",
+    profissional_id: "",
+    data_hora: ""
   });
-
-  const [activeConsultations, setActiveConsultations] = useState([
-    {
-      id: 1,
-      patient: "Maria Silva",
-      doctor: "Dr. João Santos",
-      startTime: "09:00",
-      duration: "12 min",
-      status: "Em andamento"
-    },
-    {
-      id: 2,
-      patient: "Pedro Oliveira",
-      doctor: "Dra. Ana Costa",
-      startTime: "09:30",
-      duration: "5 min",
-      status: "Aguardando"
-    }
-  ]);
-
-  const [scheduledConsultations, setScheduledConsultations] = useState([
-    {
-      id: 1,
-      patient: "Carlos Santos",
-      doctor: "Dr. Paulo Lima",
-      scheduledTime: "10:30",
-      specialty: "Cardiologia"
-    },
-    {
-      id: 2,
-      patient: "Juliana Costa",
-      doctor: "Dra. Fernanda Alves",
-      scheduledTime: "11:00",
-      specialty: "Dermatologia"
-    },
-    {
-      id: 3,
-      patient: "Roberto Silva",
-      doctor: "Dr. Carlos Mendes",
-      scheduledTime: "14:00",
-      specialty: "Neurologia"
-    }
-  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newConsultation = {
-      id: scheduledConsultations.length + 1,
-      patient: formData.patient,
-      doctor: formData.doctor,
-      scheduledTime: formData.time,
-      specialty: formData.specialty
-    };
-    setScheduledConsultations([...scheduledConsultations, newConsultation]);
-    toast({
-      title: "Teleconsulta agendada",
-      description: `Consulta marcada para ${formData.date} às ${formData.time}`,
+    addConsulta({
+      paciente_id: formData.paciente_id,
+      profissional_id: formData.profissional_id,
+      data_hora: formData.data_hora,
+      status: "Agendada"
     });
     setOpenDialog(false);
     setFormData({
-      patient: "",
-      doctor: "",
-      date: "",
-      time: "",
-      specialty: ""
+      paciente_id: "",
+      profissional_id: "",
+      data_hora: ""
     });
   };
 
-  const handleStartConsultation = (consultation: any) => {
+  const handleStartConsultation = (id: string) => {
+    updateConsulta({
+      id,
+      status: "Em andamento"
+    });
     toast({
-      title: "Iniciando teleconsulta",
-      description: `Conectando com ${consultation.patient}...`,
+      title: "Teleconsulta iniciada",
+      description: "Consulta está em andamento",
     });
   };
 
-  const handleJoinRoom = (consultation: any) => {
-    toast({
-      title: "Entrando na sala",
-      description: `Conectando à consulta de ${consultation.patient}...`,
-    });
-  };
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+
+  const activeConsultations = consultas.filter(t => t.status === "Em andamento");
+  const scheduledConsultations = consultas.filter(t => t.status === "Agendada");
+  const todayConsultations = consultas.filter(t =>
+    new Date(t.data_hora).toDateString() === new Date().toDateString()
+  ).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -124,54 +85,38 @@ export default function Telemedicina() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="patient">Paciente</Label>
-                <Input
-                  id="patient"
-                  value={formData.patient}
-                  onChange={(e) => setFormData({ ...formData, patient: e.target.value })}
-                  placeholder="Nome do paciente"
-                  required
-                />
+                <Label htmlFor="paciente">Paciente</Label>
+                <Select value={formData.paciente_id} onValueChange={(value) => setFormData({ ...formData, paciente_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um paciente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pacientes.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="doctor">Médico</Label>
-                <Input
-                  id="doctor"
-                  value={formData.doctor}
-                  onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
-                  placeholder="Nome do médico"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Data</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Horário</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    required
-                  />
-                </div>
+                <Label htmlFor="profissional">Profissional</Label>
+                <Select value={formData.profissional_id} onValueChange={(value) => setFormData({ ...formData, profissional_id: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um profissional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profissionais.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} - {p.especialidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialty">Especialidade</Label>
+                <Label htmlFor="data_hora">Data e Horário</Label>
                 <Input
-                  id="specialty"
-                  value={formData.specialty}
-                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                  placeholder="Ex: Cardiologia"
+                  id="data_hora"
+                  type="datetime-local"
+                  value={formData.data_hora}
+                  onChange={(e) => setFormData({ ...formData, data_hora: e.target.value })}
                   required
                 />
               </div>
@@ -195,7 +140,7 @@ export default function Telemedicina() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/80">Consultas Hoje</p>
-                <p className="text-3xl font-bold text-white mt-1">23</p>
+                <p className="text-3xl font-bold text-white mt-1">{todayConsultations}</p>
               </div>
               <Video className="w-10 h-10 text-white/80" />
             </div>
@@ -236,53 +181,52 @@ export default function Telemedicina() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeConsultations.map((consultation) => (
-              <div
-                key={consultation.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-border rounded-lg bg-muted/30"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
-                    <Video className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground">{consultation.patient}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                      <User className="w-3 h-3" />
-                      {consultation.doctor}
-                    </p>
-                    <div className="flex items-center gap-3 mt-2">
-                      <p className="text-sm flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-primary" />
-                        Iniciou às {consultation.startTime}
+            {activeConsultations.map((telemedicina) => {
+              const paciente = pacientes.find(p => p.id === telemedicina.paciente_id);
+              const profissional = profissionais.find(p => p.id === telemedicina.profissional_id);
+              const dataHora = new Date(telemedicina.data_hora);
+              
+              return (
+                <div
+                  key={telemedicina.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-border rounded-lg bg-muted/30"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center">
+                      <Video className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{paciente?.nome}</h3>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                        <User className="w-3 h-3" />
+                        {profissional?.nome}
                       </p>
-                      <Badge variant="outline" className="text-xs">
-                        {consultation.duration}
-                      </Badge>
+                      <div className="flex items-center gap-3 mt-2">
+                        <p className="text-sm flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-primary" />
+                          {dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          {telemedicina.status}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  {consultation.status === "Em andamento" ? (
+                  <div className="flex gap-2">
                     <Button 
                       className="bg-accent hover:bg-accent/90"
-                      onClick={() => handleJoinRoom(consultation)}
+                      onClick={() => toast({
+                        title: "Entrando na sala",
+                        description: `Conectando à consulta de ${paciente?.nome}...`,
+                      })}
                     >
                       <PhoneCall className="w-4 h-4 mr-2" />
                       Entrar na Sala
                     </Button>
-                  ) : (
-                    <Button 
-                      className="bg-secondary hover:bg-secondary/90"
-                      onClick={() => handleStartConsultation(consultation)}
-                    >
-                      <Video className="w-4 h-4 mr-2" />
-                      Iniciar Consulta
-                    </Button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -298,35 +242,40 @@ export default function Telemedicina() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {scheduledConsultations.map((consultation) => (
-              <div
-                key={consultation.id}
-                className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col items-center bg-primary-light p-3 rounded-lg min-w-[80px]">
-                    <Clock className="w-5 h-5 text-primary mb-1" />
-                    <span className="font-bold text-primary">{consultation.scheduledTime}</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">{consultation.patient}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {consultation.doctor} - {consultation.specialty}
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => toast({
-                    title: "Detalhes da consulta",
-                    description: `Visualizando consulta de ${consultation.patient}`,
-                  })}
+            {scheduledConsultations.map((telemedicina) => {
+              const paciente = pacientes.find(p => p.id === telemedicina.paciente_id);
+              const profissional = profissionais.find(p => p.id === telemedicina.profissional_id);
+              const dataHora = new Date(telemedicina.data_hora);
+              
+              return (
+                <div
+                  key={telemedicina.id}
+                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                 >
-                  Ver Detalhes
-                </Button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center bg-primary-light p-3 rounded-lg min-w-[80px]">
+                      <Clock className="w-5 h-5 text-primary mb-1" />
+                      <span className="font-bold text-primary">
+                        {dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">{paciente?.nome}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {profissional?.nome} - {profissional?.especialidade}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    className="bg-secondary hover:bg-secondary/90"
+                    onClick={() => handleStartConsultation(telemedicina.id)}
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    Iniciar
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
